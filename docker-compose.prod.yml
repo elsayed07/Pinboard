@@ -1,0 +1,79 @@
+version: "3.9"
+
+x-django-env: &django-env
+  env_file: .env
+  environment:
+    - DJANGO_SETTINGS_MODULE=config.settings.production
+    - DB_HOST=db
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --requirepass ${REDIS_PASSWORD:-} --loglevel warning
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  django:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    <<: *django-env
+    volumes:
+      - static_data:/app/staticfiles
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  celery:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    command: uv run celery -A infrastructure.celery worker --loglevel=info --concurrency=4
+    <<: *django-env
+    depends_on:
+      - django
+    restart: unless-stopped
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    command: uv run celery -A infrastructure.celery beat --loglevel=info
+    <<: *django-env
+    depends_on:
+      - celery
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - static_data:/app/staticfiles:ro
+    depends_on:
+      - django
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_data:
