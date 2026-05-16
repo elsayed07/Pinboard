@@ -12,13 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      - run: uv sync --frozen
-      - run: uv run ruff check .
-      - run: uv run black --check .
-      - run: uv run pyright
+
+      - name: Install dependencies (including dev)
+        run: uv sync --frozen
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Pyright type check
+        run: uv run pyright
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.testing
+          SECRET_KEY: ci-secret-key
 
   test:
     name: Tests
@@ -37,6 +49,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+
       redis:
         image: redis:7-alpine
         options: >-
@@ -47,24 +60,33 @@ jobs:
         ports:
           - 6379:6379
 
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.testing
+      SECRET_KEY: ci-secret-key-not-for-production
+      DB_HOST: localhost
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      - run: uv sync --frozen
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Create staticfiles dir
+        run: mkdir -p staticfiles
+
       - name: Run migrations
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.testing
-          SECRET_KEY: ci-secret-key-not-for-production
-          DB_HOST: localhost
-        run: uv run python manage.py migrate
+        run: uv run python manage.py migrate --noinput
+
       - name: Run tests
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.testing
-          SECRET_KEY: ci-secret-key-not-for-production
-          DB_HOST: localhost
-        run: uv run pytest --cov=apps --cov=shared --cov-report=xml -q
-      - uses: codecov/codecov-action@v4
+        run: uv run pytest -q --tb=short --cov=apps --cov=shared --cov-report=xml --cov-fail-under=60
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: always()
         with:
           files: ./coverage.xml
+          fail_ci_if_error: false

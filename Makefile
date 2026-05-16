@@ -1,4 +1,4 @@
-.PHONY: help dev build up down logs shell migrate migrations test lint format typecheck clean
+.PHONY: help dev build up down logs shell migrate migrations seed seed-clear test lint format typecheck clean prod-build prod-up prod-down
 
 help:
 	@echo "Pinboard development commands"
@@ -17,7 +17,10 @@ help:
 	@echo "  make lint         Run Ruff linter"
 	@echo "  make format       Run Black formatter"
 	@echo "  make typecheck    Run Pyright"
+	@echo "  make seed         Seed demo data"
+	@echo "  make seed-clear   Clear and re-seed demo data"
 	@echo "  make clean        Remove containers and volumes"
+	@echo "  make prod-build   Build production images"
 	@echo "  make createsuperuser  Create an admin user"
 
 dev:
@@ -64,8 +67,23 @@ format:
 typecheck:
 	uv run pyright
 
+seed:
+	docker compose exec django uv run python manage.py seed
+
+seed-clear:
+	docker compose exec django uv run python manage.py seed --clear
+
 createsuperuser:
 	docker compose exec django uv run python manage.py createsuperuser
+
+prod-build:
+	docker compose -f docker-compose.prod.yml build
+
+prod-up:
+	docker compose -f docker-compose.prod.yml up -d
+
+prod-down:
+	docker compose -f docker-compose.prod.yml down
 
 clean:
 	docker compose down -v --remove-orphans
