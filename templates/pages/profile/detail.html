@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.display_name }} (@{{ profile_user.username }}) — Pinboard{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-10">
+
+  <!-- Profile header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-10">
+    <img
+      src="{{ profile_user.profile.avatar_url }}"
+      alt="{{ profile_user.username }}"
+      class="h-20 w-20 rounded-full object-cover ring-2 ring-zinc-800 shrink-0"
+    />
+    <div class="flex-1 min-w-0">
+      <div class="flex flex-wrap items-center gap-3">
+        <h1 class="text-xl font-bold text-white">{{ profile_user.display_name }}</h1>
+        <span class="text-sm text-zinc-500">@{{ profile_user.username }}</span>
+        {% include "components/follow_button.html" %}
+      </div>
+
+      {% if profile_user.profile.bio %}
+      <p class="mt-2 text-sm text-zinc-400 max-w-lg">{{ profile_user.profile.bio }}</p>
+      {% endif %}
+
+      <div class="flex gap-5 mt-3 text-sm text-zinc-500">
+        <span><span class="font-semibold text-white">{{ images|length }}</span> images</span>
+        <span><span class="font-semibold text-white">{{ follower_count }}</span> followers</span>
+        <span><span class="font-semibold text-white">{{ following_count }}</span> following</span>
+        {% if profile_user.profile.website %}
+        <a href="{{ profile_user.profile.website }}" target="_blank" rel="noopener noreferrer"
+           class="text-brand-500 hover:text-brand-400 transition truncate max-w-[160px]">
+          {{ profile_user.profile.website|cut:"https://"|cut:"http://" }}
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Images grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    {% for image in images %}
+      {% include "components/image_card.html" %}
+    {% empty %}
+    <div class="col-span-full flex flex-col items-center py-20 text-zinc-600">
+      <svg class="h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      <p class="text-sm">No images yet.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

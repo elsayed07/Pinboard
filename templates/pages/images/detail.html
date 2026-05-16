@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ image.title }} — Pinboard{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+
+    <!-- Image -->
+    <div>
+      <div class="rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800">
+        <img src="{{ image.image.url }}" alt="{{ image.title }}"
+             class="w-full object-contain max-h-[70vh]" />
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-5">
+
+      <div>
+        <h1 class="text-xl font-bold text-white leading-tight">{{ image.title }}</h1>
+        {% if image.description %}
+        <p class="mt-2 text-sm text-zinc-400">{{ image.description }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Owner -->
+      <div class="flex items-center gap-3">
+        <a href="{% url 'profile' image.owner.username %}">
+          <img src="{{ image.owner.profile.avatar_url }}" alt="{{ image.owner.username }}"
+               class="h-9 w-9 rounded-full object-cover" />
+        </a>
+        <div>
+          <a href="{% url 'profile' image.owner.username %}"
+             class="text-sm font-medium text-white hover:text-brand-400 transition">
+            {{ image.owner.display_name }}
+          </a>
+          <p class="text-xs text-zinc-500">@{{ image.owner.username }}</p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-2">
+        {% if user.is_authenticated %}
+        <form method="post"
+              action="{% if user_liked %}{% url 'unlike' image.id %}{% else %}{% url 'like' image.id %}{% endif %}"
+              hx-post="{% if user_liked %}{% url 'unlike' image.id %}{% else %}{% url 'like' image.id %}{% endif %}"
+              hx-target="#like-btn" hx-swap="outerHTML"
+              id="like-btn">
+          {% csrf_token %}
+          <button type="submit"
+                  class="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm transition border
+                         {% if user_liked %}bg-red-500/10 border-red-500/30 text-red-400{% else %}border-zinc-800 text-zinc-400 hover:border-red-500/50 hover:text-red-400{% endif %}">
+            <svg class="h-4 w-4" fill="{% if user_liked %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+            {{ image.like_count }}
+          </button>
+        </form>
+
+        <form method="post"
+              action="{% if user_saved %}{% url 'unsave' image.id %}{% else %}{% url 'save' image.id %}{% endif %}"
+              hx-post="{% if user_saved %}{% url 'unsave' image.id %}{% else %}{% url 'save' image.id %}{% endif %}"
+              hx-target="#save-btn" hx-swap="outerHTML"
+              id="save-btn">
+          {% csrf_token %}
+          <button type="submit"
+                  class="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm transition border
+                         {% if user_saved %}bg-brand-500/10 border-brand-500/30 text-brand-400{% else %}border-zinc-800 text-zinc-400 hover:border-brand-500/50 hover:text-brand-400{% endif %}">
+            <svg class="h-4 w-4" fill="{% if user_saved %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+            </svg>
+            Save
+          </button>
+        </form>
+        {% endif %}
+
+        {% if image.source_url %}
+        <a href="{{ image.source_url }}" target="_blank" rel="noopener noreferrer"
+           class="flex items-center gap-1.5 rounded-xl border border-zinc-800 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:border-zinc-700 transition ml-auto">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          Source
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Stats -->
+      <div class="flex gap-4 text-xs text-zinc-600 border-t border-zinc-800 pt-4">
+        <span>{{ image.view_count }} views</span>
+        <span>{{ image.like_count }} likes</span>
+        <span>{{ image.created_at|date:"M j, Y" }}</span>
+      </div>
+
+      <!-- Tags -->
+      {% if image.tags.all %}
+      <div class="flex flex-wrap gap-1.5">
+        {% for tag in image.tags.all %}
+        <a href="{% url 'search' %}?tag={{ tag.slug }}"
+           class="text-xs px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition">
+          #{{ tag.name }}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Related images -->
+  {% if related %}
+  <div class="mt-12">
+    <h2 class="text-sm font-semibold text-zinc-400 mb-4">Related images</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {% for image in related %}
+        {% include "components/image_card.html" %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
