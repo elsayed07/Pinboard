@@ -47,7 +47,7 @@ class BookmarkService:
         image.image.save(f"{slug}.{ext}", ContentFile(response.content), save=True)
 
         if tags:
-            image.tags.set(*tags)
+            image.tags.add(*tags)
 
         process_image_task.delay(str(image.id))
         return image
@@ -77,7 +77,7 @@ class BookmarkService:
         image.image.save(file.name, file, save=True)
 
         if tags:
-            image.tags.set(*tags)
+            image.tags.add(*tags)
 
         process_image_task.delay(str(image.id))
         return image

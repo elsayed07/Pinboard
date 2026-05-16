@@ -122,7 +122,7 @@ class Command(BaseCommand):
                 },
             )
             if created:
-                image.tags.set(*data["tags"])
+                image.tags.add(*data["tags"])
                 # Random likes from other users
                 for user in random.sample(users, k=random.randint(0, len(users))):
                     Like.objects.get_or_create(user=user, image=image)

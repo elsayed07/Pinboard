@@ -1,8 +1,17 @@
 from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 from taggit.managers import TaggableManager
+from taggit.models import GenericUUIDTaggedItemBase, TaggedItemBase
 
 from shared.models import BaseModel
+
+
+class UUIDTaggedItem(GenericUUIDTaggedItemBase, TaggedItemBase):
+    """Through model that stores UUID object_ids for taggit."""
+
+    class Meta:
+        verbose_name = "Tag"
+        verbose_name_plural = "Tags"
 
 
 class ImageStatus(models.TextChoices):
@@ -57,7 +66,7 @@ class Image(BaseModel):
     like_count = models.PositiveBigIntegerField(default=0, db_index=True)
     save_count = models.PositiveIntegerField(default=0)
 
-    tags = TaggableManager(blank=True)
+    tags = TaggableManager(through=UUIDTaggedItem, blank=True)
     search_vector = SearchVectorField(null=True, blank=True)
 
     class Meta:
