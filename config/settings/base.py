@@ -26,6 +26,10 @@ THIRD_PARTY_APPS = [
     "django_htmx",
     "social_django",
     "storages",
+    "django_celery_beat",
+    "django_celery_results",
+    "rest_framework",
+    "rest_framework_simplejwt",
 ]
 
 LOCAL_APPS = [
@@ -141,7 +145,7 @@ REDIS_URL = config("REDIS_URL", default="redis://redis:6379/0")
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": REDIS_URL,
         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
         "TIMEOUT": 300,
