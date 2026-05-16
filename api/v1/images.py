@@ -1,6 +1,6 @@
-from typing import Any
-from ninja import Router, Schema, UploadedFile, File
+from ninja import Router, Schema
 from ninja.pagination import paginate, PageNumberPagination
+from ninja.responses import Status
 
 from apps.images.selectors.images import ImageSelector
 from apps.images.services.bookmarking import BookmarkService
@@ -64,30 +64,30 @@ def bookmark(request, payload: BookmarkIn):
             description=payload.description,
             tags=payload.tags or None,
         )
-        return 201, image
+        return Status(201, image)
     except ApplicationError as exc:
-        return exc.code, {"detail": exc.message}
+        return Status(exc.code, {"detail": exc.message})
 
 
 @router.post("/{image_id}/like/", response={201: dict, 400: ErrorOut, 409: ErrorOut})
 def like(request, image_id: str):
     try:
         EngagementService.like(user=request.auth, image_id=image_id)
-        return 201, {"status": "liked"}
+        return Status(201, {"status": "liked"})
     except ApplicationError as exc:
-        return exc.code, {"detail": exc.message}
+        return Status(exc.code, {"detail": exc.message})
 
 
 @router.delete("/{image_id}/like/", response={204: None, 404: ErrorOut})
 def unlike(request, image_id: str):
     try:
         EngagementService.unlike(user=request.auth, image_id=image_id)
-        return 204, None
+        return Status(204, None)
     except ApplicationError as exc:
-        return exc.code, {"detail": exc.message}
+        return Status(exc.code, {"detail": exc.message})
 
 
 @router.post("/{image_id}/view/", response={200: dict}, auth=None)
 def record_view(request, image_id: str):
     count = EngagementService.record_view(image_id=image_id)
-    return 200, {"views": count}
+    return Status(200, {"views": count})
