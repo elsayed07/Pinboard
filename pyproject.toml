@@ -30,8 +30,8 @@ dependencies = [
     "djangorestframework>=3.15",
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.3",
     "pytest-django>=4.9",
     "pytest-asyncio>=0.24",
@@ -69,7 +69,7 @@ venv = ".venv"
 DJANGO_SETTINGS_MODULE = "config.settings.testing"
 python_files = ["test_*.py", "*_test.py"]
 asyncio_mode = "auto"
-addopts = "--reuse-db --cov=apps --cov=shared --cov-report=term-missing"
+addopts = "--cov=apps --cov=shared --cov-report=term-missing"
 
 [tool.coverage.run]
 source = ["apps", "shared", "api"]
