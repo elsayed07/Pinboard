@@ -49,7 +49,8 @@ class BookmarkService:
         if tags:
             image.tags.add(*tags)
 
-        process_image_task.delay(str(image.id))
+        transaction.on_commit(lambda: process_image_task.delay(str(image.id)))
+        transaction.on_commit(lambda: _record_bookmark_activity(owner, image))
         return image
 
     @staticmethod
@@ -79,5 +80,12 @@ class BookmarkService:
         if tags:
             image.tags.add(*tags)
 
-        process_image_task.delay(str(image.id))
+        transaction.on_commit(lambda: process_image_task.delay(str(image.id)))
+        transaction.on_commit(lambda: _record_bookmark_activity(owner, image))
         return image
+
+
+def _record_bookmark_activity(owner, image) -> None:
+    from apps.activity.models import Verb
+    from apps.activity.services import ActivityService
+    ActivityService.record(actor=owner, verb=Verb.BOOKMARKED, target=image)

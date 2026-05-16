@@ -153,3 +153,61 @@ def unsave_view(request: HttpRequest, image_id: str) -> HttpResponse:
     if request.htmx:
         return render(request, "components/save_button.html", {"image": image, "user_saved": False})
     return redirect("image-detail", slug=image.slug)
+
+
+# ── Collections ───────────────────────────────────────────────────────────────
+
+@login_required
+def collections_view(request: HttpRequest) -> HttpResponse:
+    from apps.images.forms import CollectionForm
+    from apps.images.models import Collection
+    from apps.images.services.collections import CollectionService
+
+    collections = Collection.objects.filter(owner=request.user).prefetch_related("images")
+    form = CollectionForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            col = CollectionService.create(
+                owner=request.user,
+                name=form.cleaned_data["name"],
+                description=form.cleaned_data.get("description", ""),
+                is_private=form.cleaned_data.get("is_private", False),
+            )
+            if request.htmx:
+                return render(request, "components/collection_card.html", {"collection": col})
+            return redirect("collections")
+        except ApplicationError as exc:
+            form.add_error(None, exc.message)
+
+    return render(request, "pages/images/collections.html", {"collections": collections, "form": form})
+
+
+@login_required
+def collection_detail_view(request: HttpRequest, collection_id: str) -> HttpResponse:
+    from apps.images.models import Collection
+    collection = get_object_or_404(Collection, id=collection_id, owner=request.user)
+    images = Image.objects.filter(collection=collection, status="ready").select_related("owner", "owner__profile")
+    return render(request, "pages/images/collection_detail.html", {"collection": collection, "images": images})
+
+
+@login_required
+@require_POST
+def collection_add_image_view(request: HttpRequest, collection_id: str, image_id: str) -> HttpResponse:
+    from apps.images.services.collections import CollectionService
+    try:
+        CollectionService.add_image(user=request.user, collection_id=collection_id, image_id=image_id)
+    except ApplicationError as exc:
+        pass
+    return HttpResponse(status=204)
+
+
+@login_required
+@require_POST
+def collection_remove_image_view(request: HttpRequest, image_id: str) -> HttpResponse:
+    from apps.images.services.collections import CollectionService
+    try:
+        CollectionService.remove_image(user=request.user, image_id=image_id)
+    except ApplicationError:
+        pass
+    return HttpResponse(status=204)

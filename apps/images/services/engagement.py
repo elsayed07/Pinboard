@@ -26,6 +26,8 @@ class EngagementService:
             cache.incr(CacheKey.image_likes(image_id))
         except Exception:
             pass
+
+        transaction.on_commit(lambda: _post_like(user, image))
         return like
 
     @staticmethod
@@ -66,3 +68,17 @@ class EngagementService:
         if not deleted:
             raise NotFoundError("Save not found.")
         Image.objects.filter(id=image_id).update(save_count=F("save_count") - 1)
+
+
+def _post_like(user: User, image: "Image") -> None:
+    from apps.activity.models import Verb
+    from apps.activity.services import ActivityService
+    from apps.notifications.services import NotificationService
+
+    ActivityService.record(actor=user, verb=Verb.LIKED, target=image)
+    NotificationService.send(
+        recipient=image.owner,
+        actor=user,
+        verb="liked your image",
+        target=image,
+    )

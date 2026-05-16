@@ -44,3 +44,16 @@ class UploadForm(forms.Form):
     def clean_tags(self) -> list[str]:
         raw = self.cleaned_data.get("tags", "")
         return [t.strip().lower() for t in raw.split(",") if t.strip()]
+
+
+class CollectionForm(forms.Form):
+    name = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={"placeholder": "Collection name"}),
+    )
+    description = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2, "placeholder": "What's this collection about?"}),
+    )
+    is_private = forms.BooleanField(required=False, label="Private collection")
