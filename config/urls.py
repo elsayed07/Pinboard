@@ -1,17 +1,25 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path
 
 from api.v1 import api
 
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
+
+
 urlpatterns = [
+    path("health/", health_check, name="health-check"),
     path("admin/", admin.site.urls),
     path("accounts/", include("apps.accounts.urls")),
     path("images/", include("apps.images.urls")),
     path("activity/", include("apps.activity.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("search/", include("apps.search.urls")),
+    path("moderation/", include("apps.moderation.urls")),
     path("social/", include("social_django.urls", namespace="social")),
     path("api/v1/", api.urls),
     path("", include("apps.images.urls_home")),

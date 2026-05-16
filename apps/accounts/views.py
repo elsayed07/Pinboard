@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.forms import AvatarForm, LoginForm, ProfileForm, RegisterForm
 from apps.accounts.models import User
@@ -15,6 +16,7 @@ from apps.accounts.tasks import send_welcome_email
 from shared.exceptions import ApplicationError
 
 
+@ratelimit(key="ip", rate="10/h", method="POST", block=True)
 def register_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("home")
@@ -36,6 +38,7 @@ def register_view(request: HttpRequest) -> HttpResponse:
     return render(request, "pages/auth/register.html", {"form": form})
 
 
+@ratelimit(key="ip", rate="20/h", method="POST", block=True)
 def login_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated:
         return redirect("home")

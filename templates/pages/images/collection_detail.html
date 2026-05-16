@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ collection.name }} — Pinboard{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <a href="{% url 'collections' %}" class="inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 transition-colors mb-4">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Collections
+    </a>
+
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold text-zinc-100">{{ collection.name }}</h1>
+          {% if collection.is_private %}
+            <span class="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">Private</span>
+          {% endif %}
+        </div>
+        {% if collection.description %}
+          <p class="mt-1 text-zinc-400">{{ collection.description }}</p>
+        {% endif %}
+        <p class="mt-2 text-sm text-zinc-500">{{ images|length }} image{{ images|length|pluralize }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image grid -->
+  {% if images %}
+    <div class="columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4">
+      {% for image in images %}
+        <div class="group relative break-inside-avoid rounded-xl overflow-hidden bg-zinc-900">
+          <a href="{% url 'image-detail' image.slug %}">
+            <img
+              src="{{ image.image_url }}"
+              alt="{{ image.title }}"
+              class="w-full object-cover group-hover:brightness-75 transition-all duration-200"
+              loading="lazy"
+            />
+          </a>
+          <div class="absolute inset-0 flex items-end opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-3 bg-gradient-to-t from-black/70">
+            <div class="flex items-center justify-between w-full gap-2">
+              <span class="text-white text-sm font-medium truncate">{{ image.title }}</span>
+              <form
+                method="post"
+                action="{% url 'collection-remove-image' image.id %}"
+                hx-post="{% url 'collection-remove-image' image.id %}"
+                hx-target="closest div.group"
+                hx-swap="outerHTML"
+              >
+                {% csrf_token %}
+                <button
+                  type="submit"
+                  title="Remove from collection"
+                  class="flex-shrink-0 p-1.5 rounded-lg bg-black/50 text-zinc-300 hover:text-red-400 hover:bg-black/70 transition-colors"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="flex flex-col items-center justify-center py-24 text-center">
+      <svg class="w-16 h-16 text-zinc-700 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      </svg>
+      <p class="text-zinc-400 text-lg font-medium">No images yet</p>
+      <p class="text-zinc-500 text-sm mt-1">Add images to this collection from any image detail page.</p>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

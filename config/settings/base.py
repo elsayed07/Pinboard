@@ -30,6 +30,7 @@ THIRD_PARTY_APPS = [
     "django_celery_results",
     "rest_framework",
     "rest_framework_simplejwt",
+    "django_ratelimit",
 ]
 
 LOCAL_APPS = [

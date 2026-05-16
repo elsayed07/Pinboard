@@ -15,11 +15,3 @@ class ActivityService:
             target_id=str(target.pk),
         )
 
-    @staticmethod
-    def get_feed(user: User, limit: int = 40):
-        following_ids = user.following.values_list("following_id", flat=True)
-        return (
-            Activity.objects.filter(actor_id__in=following_ids)
-            .select_related("actor", "actor__profile", "target_content_type")
-            .order_by("-created_at")[:limit]
-        )
