@@ -156,3 +156,46 @@ def unfollow_view(request: HttpRequest, username: str) -> HttpResponse:
             "is_following": False,
         })
     return redirect("profile", username=username)
+
+
+@login_required
+@require_POST
+def block_view(request: HttpRequest, username: str) -> HttpResponse:
+    target = get_object_or_404(User, username=username)
+    try:
+        FollowService.block(blocker=request.user, target_id=str(target.id))
+    except ApplicationError:
+        pass
+    return redirect("home")
+
+
+@login_required
+@require_POST
+def unblock_view(request: HttpRequest, username: str) -> HttpResponse:
+    target = get_object_or_404(User, username=username)
+    FollowService.unblock(blocker=request.user, target_id=str(target.id))
+    return redirect("profile", username=username)
+
+
+@login_required
+def saved_images_view(request: HttpRequest) -> HttpResponse:
+    from apps.images.models import Image
+    images = (
+        Image.objects.filter(saves__user=request.user, status="ready")
+        .select_related("owner", "owner__profile")
+        .prefetch_related("tags")
+        .order_by("-saves__created_at")
+    )
+    return render(request, "pages/profile/saved.html", {"images": images})
+
+
+@login_required
+def liked_images_view(request: HttpRequest) -> HttpResponse:
+    from apps.images.models import Image
+    images = (
+        Image.objects.filter(likes__user=request.user, status="ready")
+        .select_related("owner", "owner__profile")
+        .prefetch_related("tags")
+        .order_by("-likes__created_at")
+    )
+    return render(request, "pages/profile/liked.html", {"images": images})

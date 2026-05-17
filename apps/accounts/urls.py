@@ -8,7 +8,11 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("settings/", views.settings_view, name="settings"),
     path("settings/avatar/", views.update_avatar_view, name="update-avatar"),
+    path("saved/", views.saved_images_view, name="saved-images"),
+    path("liked/", views.liked_images_view, name="liked-images"),
     path("<str:username>/", views.profile_view, name="profile"),
     path("<str:username>/follow/", views.follow_view, name="follow"),
     path("<str:username>/unfollow/", views.unfollow_view, name="unfollow"),
+    path("<str:username>/block/", views.block_view, name="block"),
+    path("<str:username>/unblock/", views.unblock_view, name="unblock"),
 ]

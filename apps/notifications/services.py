@@ -39,6 +39,7 @@ class NotificationService:
                 {
                     "type": "notify",
                     "id": str(notification.id),
+                    "message": f"{notification.actor.username} {notification.verb}",
                     "verb": notification.verb,
                     "actor": notification.actor.username,
                     "created_at": notification.created_at.isoformat(),
