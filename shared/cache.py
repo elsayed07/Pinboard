@@ -26,6 +26,10 @@ class CacheKey:
     def user_profile(user_id: str) -> str:
         return f"user:profile:{user_id}"
 
+    @staticmethod
+    def unread_notifications(user_id: str) -> str:
+        return f"user:unread_notifications:{user_id}"
+
 
 def invalidate_user_feed(user_id: str, pages: int = 5) -> None:
     keys = [CacheKey.user_feed(user_id, p) for p in range(1, pages + 1)]

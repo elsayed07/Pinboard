@@ -15,11 +15,9 @@
     </a>
   </div>
 
-  {% if images %}
+  {% if page.results %}
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {% for image in images %}
-        {% include "components/image_card.html" %}
-      {% endfor %}
+      {% include "components/image_grid.html" %}
     </div>
   {% else %}
     <div class="flex flex-col items-center justify-center py-24 text-center">

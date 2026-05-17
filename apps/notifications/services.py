@@ -1,9 +1,11 @@
+from django.core.cache import cache
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from apps.accounts.models import User
 from apps.notifications.models import Notification
+from shared.cache import CacheKey
 
 
 class NotificationService:
@@ -25,6 +27,9 @@ class NotificationService:
             target_content_type=ct,
             target_id=target_id or "",
         )
+
+        # Invalidate cached badge count so the next page render shows the new total.
+        cache.delete(CacheKey.unread_notifications(str(recipient.id)))
 
         NotificationService._push_ws(notification)
         return notification
@@ -50,12 +55,17 @@ class NotificationService:
 
     @staticmethod
     def mark_read(*, user: User, notification_id: str) -> None:
-        Notification.objects.filter(
+        updated = Notification.objects.filter(
             recipient=user, id=notification_id, read_at__isnull=True
         ).update(read_at=timezone.now())
+        if updated:
+            cache.delete(CacheKey.unread_notifications(str(user.id)))
 
     @staticmethod
     def mark_all_read(user: User) -> int:
-        return Notification.objects.filter(
+        count = Notification.objects.filter(
             recipient=user, read_at__isnull=True
         ).update(read_at=timezone.now())
+        if count:
+            cache.delete(CacheKey.unread_notifications(str(user.id)))
+        return count

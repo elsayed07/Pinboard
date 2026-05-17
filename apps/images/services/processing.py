@@ -1,3 +1,4 @@
+from django.contrib.postgres.search import SearchVector
 from django.core.files.base import ContentFile
 
 from apps.images.models import Image, ImageStatus
@@ -30,6 +31,15 @@ class ProcessingService:
 
             image.status = ImageStatus.READY
             image.save(update_fields=["image", "thumbnail", "width", "height", "status", "updated_at"])
+
+            # Populate search_vector after the image row is committed so the
+            # GIN index stays consistent.
+            Image.objects.filter(id=image_id).update(
+                search_vector=(
+                    SearchVector("title", weight="A")
+                    + SearchVector("description", weight="B")
+                )
+            )
 
         except Exception:
             image.status = ImageStatus.FAILED

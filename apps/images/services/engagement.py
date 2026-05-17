@@ -36,7 +36,7 @@ class EngagementService:
         deleted, _ = Like.objects.filter(user=user, image_id=image_id).delete()
         if not deleted:
             raise NotFoundError("Like not found.")
-        Image.objects.filter(id=image_id).update(like_count=F("like_count") - 1)
+        Image.objects.filter(id=image_id, like_count__gt=0).update(like_count=F("like_count") - 1)
 
     @staticmethod
     def record_view(*, image_id: str) -> int:
@@ -67,7 +67,7 @@ class EngagementService:
         deleted, _ = Save.objects.filter(user=user, image_id=image_id).delete()
         if not deleted:
             raise NotFoundError("Save not found.")
-        Image.objects.filter(id=image_id).update(save_count=F("save_count") - 1)
+        Image.objects.filter(id=image_id, save_count__gt=0).update(save_count=F("save_count") - 1)
 
 
 def _post_like(user: User, image: "Image") -> None:

@@ -14,6 +14,7 @@ from apps.accounts.services.follow import FollowService
 from apps.accounts.services.profile import ProfileService
 from apps.accounts.tasks import send_welcome_email
 from shared.exceptions import ApplicationError
+from shared.pagination import paginate
 
 
 @ratelimit(key="ip", rate="10/h", method="POST", block=True)
@@ -74,12 +75,15 @@ def profile_view(request: HttpRequest, username: str) -> HttpResponse:
         is_following = UserSelector.is_following(follower=viewer, target=profile_user)
 
     from apps.images.selectors.images import ImageSelector
-    images = ImageSelector.user_images(owner=profile_user, viewer=viewer)
+    qs = ImageSelector.user_images(owner=profile_user, viewer=viewer)
+    page = paginate(qs, page=int(request.GET.get("page", 1)))
 
+    if request.htmx:
+        return render(request, "components/image_grid.html", {"page": page})
     return render(request, "pages/profile/detail.html", {
         "profile_user": profile_user,
         "is_following": is_following,
-        "images": images[:24],
+        "page": page,
         "follower_count": profile_user.followers.count(),
         "following_count": profile_user.following.count(),
     })
@@ -180,22 +184,28 @@ def unblock_view(request: HttpRequest, username: str) -> HttpResponse:
 @login_required
 def saved_images_view(request: HttpRequest) -> HttpResponse:
     from apps.images.models import Image
-    images = (
+    qs = (
         Image.objects.filter(saves__user=request.user, status="ready")
         .select_related("owner", "owner__profile")
         .prefetch_related("tags")
         .order_by("-saves__created_at")
     )
-    return render(request, "pages/profile/saved.html", {"images": images})
+    page = paginate(qs, page=int(request.GET.get("page", 1)))
+    if request.htmx:
+        return render(request, "components/image_grid.html", {"page": page})
+    return render(request, "pages/profile/saved.html", {"page": page})
 
 
 @login_required
 def liked_images_view(request: HttpRequest) -> HttpResponse:
     from apps.images.models import Image
-    images = (
+    qs = (
         Image.objects.filter(likes__user=request.user, status="ready")
         .select_related("owner", "owner__profile")
         .prefetch_related("tags")
         .order_by("-likes__created_at")
     )
-    return render(request, "pages/profile/liked.html", {"images": images})
+    page = paginate(qs, page=int(request.GET.get("page", 1)))
+    if request.htmx:
+        return render(request, "components/image_grid.html", {"page": page})
+    return render(request, "pages/profile/liked.html", {"page": page})

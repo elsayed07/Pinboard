@@ -1,4 +1,5 @@
-﻿from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -8,7 +9,7 @@ from apps.images.models import Image
 from apps.images.selectors.images import ImageSelector
 from apps.images.services.bookmarking import BookmarkService
 from apps.images.services.engagement import EngagementService
-from shared.exceptions import ApplicationError
+from shared.exceptions import ApplicationError, ConflictError
 from shared.pagination import paginate
 
 
@@ -51,7 +52,12 @@ def image_detail_view(request: HttpRequest, slug: str) -> HttpResponse:
         user_liked = image.likes.filter(user=request.user).exists()
         user_saved = image.saves.filter(user=request.user).exists()
 
-    related = ImageSelector.public_feed().filter(tags__in=image.tags.all()).exclude(id=image.id).distinct()[:8]
+    related = (
+        ImageSelector.public_feed()
+        .filter(tags__in=image.tags.all())
+        .exclude(id=image.id)
+        .distinct()[:8]
+    )
 
     return render(request, "pages/images/detail.html", {
         "image": image,
@@ -103,7 +109,7 @@ def like_view(request: HttpRequest, image_id: str) -> HttpResponse:
     try:
         EngagementService.like(user=request.user, image_id=image_id)
         liked = True
-    except ApplicationError:
+    except ConflictError:
         liked = True
 
     image = get_object_or_404(Image, id=image_id)
@@ -132,7 +138,7 @@ def save_view(request: HttpRequest, image_id: str) -> HttpResponse:
     try:
         EngagementService.save_image(user=request.user, image_id=image_id)
         saved = True
-    except ApplicationError:
+    except ConflictError:
         saved = True
 
     image = get_object_or_404(Image, id=image_id)
@@ -163,7 +169,13 @@ def collections_view(request: HttpRequest) -> HttpResponse:
     from apps.images.models import Collection
     from apps.images.services.collections import CollectionService
 
-    collections = Collection.objects.filter(owner=request.user).prefetch_related("images")
+    collections = (
+        Collection.objects
+        .filter(owner=request.user)
+        .select_related("cover_image")
+        .annotate(image_count=Count("images"))
+        .order_by("-created_at")
+    )
     form = CollectionForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
@@ -175,6 +187,7 @@ def collections_view(request: HttpRequest) -> HttpResponse:
                 is_private=form.cleaned_data.get("is_private", False),
             )
             if request.htmx:
+                col.image_count = 0
                 return render(request, "components/collection_card.html", {"collection": col})
             return redirect("collections")
         except ApplicationError as exc:
@@ -187,7 +200,11 @@ def collections_view(request: HttpRequest) -> HttpResponse:
 def collection_detail_view(request: HttpRequest, collection_id: str) -> HttpResponse:
     from apps.images.models import Collection
     collection = get_object_or_404(Collection, id=collection_id, owner=request.user)
-    images = Image.objects.filter(collection=collection, status="ready").select_related("owner", "owner__profile")
+    images = (
+        Image.objects
+        .filter(collection=collection, status="ready")
+        .select_related("owner", "owner__profile")
+    )
     return render(request, "pages/images/collection_detail.html", {"collection": collection, "images": images})
 
 
@@ -197,7 +214,7 @@ def collection_add_image_view(request: HttpRequest, collection_id: str, image_id
     from apps.images.services.collections import CollectionService
     try:
         CollectionService.add_image(user=request.user, collection_id=collection_id, image_id=image_id)
-    except ApplicationError as exc:
+    except ApplicationError:
         pass
     return HttpResponse(status=204)
 
