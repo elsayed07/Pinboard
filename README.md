@@ -192,14 +192,10 @@ curl https://yourdomain.com/health/
 | `SOCIAL_AUTH_GOOGLE_OAUTH2_KEY` / `_SECRET` | Google OAuth2 |
 | `SOCIAL_AUTH_GITHUB_KEY` / `_SECRET` | GitHub OAuth2 |
 
-See `.env.example` for the full documented list.
-
----
-
 
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT
