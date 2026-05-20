@@ -196,12 +196,7 @@ See `.env.example` for the full documented list.
 
 ---
 
-## Contributing
 
-1. Fork the repo and create a feature branch
-2. Run the test suite: `docker compose exec django uv run pytest tests/ -q`
-3. Make sure `ruff check .` passes with no errors
-4. Open a pull request with a clear description of the change
 
 ---
 
